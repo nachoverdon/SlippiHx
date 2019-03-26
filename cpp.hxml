@@ -1,0 +1,4 @@
+-cpp build
+-cp src
+-D scriptable
+-main Main
