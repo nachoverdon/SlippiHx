@@ -213,6 +213,7 @@ class SlpDecoder {
         while (!isEndObject()) {
             var field = readString();
             var value = read();
+            if (value == 7) trace('value is 7');
             object.set(field, value);
             trace('field, value');
             trace(field, value);
@@ -368,7 +369,7 @@ class SlpDecoder {
         switch (marker) {
             case 7:
                 var pos = position - 20;
-                for (i in pos...position + 20) {
+                for (i in pos...position + 100) {
                     if (i == position) trace('--- pos ---');
                     trace([${char(readByte(i))}]);
                     if (i == position) trace('--- pos ---');
