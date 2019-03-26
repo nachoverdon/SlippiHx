@@ -36,9 +36,9 @@ class SlpDecoder {
     }
 
     function next(?step: Int = 1) {
-        trace('Position: $position, byte: ${String.fromCharCode(bytes.get(position))} (${bytes.get(position)})');
+        // trace('Position: $position, byte: ${String.fromCharCode(bytes.get(position))} (${bytes.get(position)})');
         position += step;
-        trace('New position: $position');
+        // trace('New position: $position');
     }
 
     function isMarker(marker: Markers): Bool {
@@ -137,7 +137,6 @@ class SlpDecoder {
     }
 
     function readInt32(): Int32 {
-        trace('readInt32');
         // var pos = position;
         // next(4);
 
@@ -151,7 +150,6 @@ class SlpDecoder {
 
         // return buffer.getBytes().getInt32(0);
         var value = readBytes(5).getInt32(0);
-        trace(value);
         return value;
     }
 
@@ -213,7 +211,6 @@ class SlpDecoder {
         while (!isEndObject()) {
             var field = readString();
             var value = read();
-            if (value == 7) trace('value is 7');
             object.set(field, value);
             trace('field, value');
             trace(field, value);
@@ -249,7 +246,7 @@ class SlpDecoder {
         return array;
     }
 
-    function readType() {
+    function readType(): Null<Int> {
         var type_sign = readByte();
 
         if (type_sign != Markers.TYPE) {
@@ -265,7 +262,7 @@ class SlpDecoder {
         return type;
     }
 
-    function readCount() {
+    function readCount(): Int {
         var count_sign = readByte();
 
         if (count_sign != Markers.COUNT) {
@@ -367,15 +364,11 @@ class SlpDecoder {
 
     function readContainerAndParameters(marker: Markers): Any {
         switch (marker) {
-            case 7:
-                var pos = position - 20;
-                for (i in pos...position + 100) {
-                    if (i == position) trace('--- pos ---');
-                    trace([${char(readByte(i))}]);
-                    if (i == position) trace('--- pos ---');
-                }
-                // trace(', [${char(readByte(pos + 1))}], [${char(readByte(pos))}]');
-                return read();
+            // this 7 is actually the length of the string 'players'
+            // It seems that we are skipping 1 bye and its not reading
+            // the preceding type byte [U]
+            // case 7:
+            //     return 7;
             // Containers
             case Markers.ARRAY_START:
                 trace('Byte is ${String.fromCharCode(Markers.ARRAY_START)} (${Markers.ARRAY_START})');
@@ -394,7 +387,7 @@ class SlpDecoder {
                 trace('Known marker: ${Markers.COUNT}');
                 // return readArray();
             default:
-                return null;
+                return marker;
         }
 
         return null;

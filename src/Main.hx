@@ -3,10 +3,8 @@ import haxe.Utf8;
 
 class Main {
 	static function main() {
-		trace('----');
-		trace('@${String.fromCharCode(7)}@');
-		trace('----');
-		var file = File.read('test/fox.slp', true);
+		// var file = File.read('test/fox.slp', true);
+		var file = File.read('test/falco.slp', true);
 		file.bigEndian = true;
 		var bytes = file.readAll();
 		// var file = File.getBytes('test/fox.slp');
