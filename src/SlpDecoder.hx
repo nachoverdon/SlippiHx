@@ -35,6 +35,12 @@ class SlpDecoder {
         return metadata;
     }
 
+    function next(?step: Int = 1) {
+        trace('Position: $position, byte: ${String.fromCharCode(bytes.get(position))} (${bytes.get(position)})');
+        position += step;
+        trace('New position: $position');
+    }
+
     function isMarker(marker: Markers): Bool {
         return readByte() == marker;
     }
@@ -47,8 +53,11 @@ class SlpDecoder {
         return isMarker(Markers.ARRAY_END);
     }
 
-    function readByte(): Int {
-        return bytes.get(position);
+    function readByte(?pos = null): Int {
+        if (pos != null)
+            return bytes.get(pos);
+        else
+            return bytes.get(position);
     }
 
     static function toBigEndian(bytes: Bytes): Bytes {
@@ -72,22 +81,42 @@ class SlpDecoder {
 
     function readBytes(size: Int): Bytes {
         var arr = new Array<Int>();
-        var buffer = new BytesBuffer();
-
+        next();
         size--;
-
+        var bytes = Bytes.alloc(size);
         for (i in 0...size) {
-            buffer.addByte(readByte());
+            arr.unshift(readByte());
+            next();
         }
 
-        return buffer.getBytes();
+        for (i in 0...arr.length) {
+            bytes.set(i, arr[i]);
+        }
+
+        return bytes;
+    }
+
+    function readNull() {
+        return null;
+    }
+
+    function readNoop() {
+        return null;
+    }
+
+    function readTrue() {
+        return true;
+    }
+
+    function readFalse() {
+        return false;
     }
 
     function readInt() {
         var pos = position;
-        position++;
+        next();
 
-        return readByte();
+        return readByte(pos);
     }
 
     function readInt8(): Int {
@@ -96,19 +125,21 @@ class SlpDecoder {
 
     function readUInt8(): Int { // UInt type?
         // var pos = position;
-        // position++;
+        // next();
 
         // return bytes.get(pos);
         return readInt();
     }
 
     function readInt16(): Int {
+        // return bytes.getUInt16(position);
         return readBytes(3).getUInt16(0);
     }
 
     function readInt32(): Int32 {
+        trace('readInt32');
         // var pos = position;
-        // position += 4;
+        // next(4);
 
         // return bytes.getInt32(pos);
         // return readInt(5);
@@ -119,7 +150,9 @@ class SlpDecoder {
         // }
 
         // return buffer.getBytes().getInt32(0);
-        return readBytes(5).getInt32(0);
+        var value = readBytes(5).getInt32(0);
+        trace(value);
+        return value;
     }
 
     function readInt64(): Int64 {
@@ -128,7 +161,7 @@ class SlpDecoder {
 
     function readFloat32() {
         // var pos = position;
-        // position += size - 1;
+        // next(size - 1);
 
         // var fbytes = bytes.sub(pos, 5).getData();
         // #if neko
@@ -164,11 +197,13 @@ class SlpDecoder {
             throw e;
         }
 
+
+
         var pos = position;
-        position += length;
+        next(length);
 
         var string = bytes.getString(pos, length);
-        trace(string);
+        trace('String "$string" with length $length');
         return string;
     }
 
@@ -179,14 +214,15 @@ class SlpDecoder {
             var field = readString();
             var value = read();
             object.set(field, value);
+            trace('field, value');
             trace(field, value);
 
-            if (field == 'metadata') {
-                metadata = object;
-            }
+            // if (field == 'metadata') {
+            //     metadata = object;
+            // }
         }
 
-        position++;
+        next();
 
         return object;
     }
@@ -199,19 +235,15 @@ class SlpDecoder {
         // Like:  UInt8 = 1 byte, if 25 items, then 1 * 25items = X. add that to position
         // + the bytes that tell you the length/type ($X#T)
         var type = readType();
+        next();
         var length = readCount();
-        // var type = bytes.get
-        // var length = readInt32();
 
-        // for (byte in 0...length) {
+        // while (!isEndArray()) {
         //     array.push(read());
         // }
 
-        while (!isEndArray()) {
-            array.push(read());
-        }
-
-        position++;
+        // next();
+        next(length);
 
         return array;
     }
@@ -219,36 +251,40 @@ class SlpDecoder {
     function readType() {
         var type_sign = readByte();
 
-        if (type_sign != Markers.TYPE)
+        if (type_sign != Markers.TYPE) {
             trace('${String.fromCharCode(type_sign)} ($type_sign) is not ' +
             '${String.fromCharCode(Markers.TYPE)} (${Markers.TYPE}) at position $position');
+            return null;
+        }
 
-        position++;
+        next();
         var type = readByte();
         trace('Type is ${String.fromCharCode(type)} ($type)');
-        return type;
 
+        return type;
     }
 
     function readCount() {
-        position++;
         var count_sign = readByte();
 
-        if (count_sign != Markers.COUNT)
+        if (count_sign != Markers.COUNT) {
             trace('${String.fromCharCode(count_sign)} ($count_sign) is not ' +
             '${String.fromCharCode(Markers.COUNT)} (${Markers.COUNT}) at position $position');
+            return null;
+        }
 
-        position++;
+        next();
         var count = readValue(readByte());
         // trace('Count is ${String.fromCharCode(count)} ($count)');
+
         return count;
     }
 
     function read(): Any {
         var marker = readByte();
-        trace('$marker: ${String.fromCharCode(marker)}');
+        trace('[${String.fromCharCode(marker)}]: $marker');
 
-        position++;
+        next();
 
         var value = readValue(marker);
         if (value != null) return value;
@@ -256,10 +292,14 @@ class SlpDecoder {
         var other = readContainerAndParameters(marker);
         if (other != null) return other;
 
-        trace('"${String.fromCharCode(marker)}" ($marker) at ${position - 1}');
-        var e = 'UBJSON decoder - value type with marker ${marker} is ' +
-        'not supported yet. Position: ${position - 1}.';
-        throw e;
+        if (position >= bytes.length) {
+            trace('End of file.');
+        } else {
+            trace('[${String.fromCharCode(marker)}] ($marker) at ${position - 1}');
+            var e = 'UBJSON decoder - value type with marker [${String.fromCharCode(marker)}] (${marker}) is ' +
+            'not supported yet. Position: ${position - 1}.';
+            throw e;
+        }
 
         return null;
     }
@@ -268,58 +308,73 @@ class SlpDecoder {
         switch (marker) {
             case Markers.NULL:
                 trace('Byte is ${String.fromCharCode(Markers.NULL)} (${Markers.NULL})');
-                trace('Known marker: ${Markers.TYPE}');
+                return readNull();
             case Markers.NOOP:
                 trace('Byte is ${String.fromCharCode(Markers.NOOP)} (${Markers.NOOP})');
-                trace('Known marker: ${Markers.NOOP}');
+                return readNoop();
             case Markers.TRUE:
                 trace('Byte is ${String.fromCharCode(Markers.TRUE)} (${Markers.TRUE})');
-                trace('Known marker: ${Markers.TRUE}');
+                return readTrue();
             case Markers.FALSE:
                 trace('Byte is ${String.fromCharCode(Markers.FALSE)} (${Markers.FALSE})');
-                trace('Known marker: ${Markers.FALSE}');
+                return readFalse();
             case Markers.INT8:
                 trace('Byte is ${String.fromCharCode(Markers.INT8)} (${Markers.INT8})');
                 trace('Known marker: ${Markers.INT8}');
-                return readUInt8();
+                return readInt8();
             case Markers.UINT8:
                 trace('Byte is ${String.fromCharCode(Markers.UINT8)} (${Markers.UINT8})');
                 return readUInt8();
             case Markers.INT16:
                 trace('Byte is ${String.fromCharCode(Markers.INT16)} (${Markers.INT16})');
                 trace('Known marker: ${Markers.INT16}');
-                return readInt(3);
+                return readInt16();
             case Markers.INT32:
                 trace('Byte is ${String.fromCharCode(Markers.INT32)} (${Markers.INT32})');
                 return readInt32();
             case Markers.INT64:
                 trace('Byte is ${String.fromCharCode(Markers.INT64)} (${Markers.INT64})');
                 trace('Known marker: ${Markers.INT64}');
-                return readInt(9);
+                return readInt64();
             case Markers.FLOAT32:
                 trace('Byte is ${String.fromCharCode(Markers.FLOAT32)} (${Markers.FLOAT32})');
                 trace('Known marker: ${Markers.FLOAT32}');
+                return readFloat32();
             case Markers.FLOAT64:
                 trace('Byte is ${String.fromCharCode(Markers.FLOAT64)} (${Markers.FLOAT64})');
                 trace('Known marker: ${Markers.FLOAT64}');
+                return readFloat64();
             case Markers.HIGH_PRECISION_NUMBER:
                 trace('Byte is ${String.fromCharCode(Markers.HIGH_PRECISION_NUMBER)} (${Markers.HIGH_PRECISION_NUMBER})');
                 trace('Known marker: ${Markers.HIGH_PRECISION_NUMBER}');
+                return readHighPrecisionNumber();
             case Markers.CHAR:
                 trace('Byte is ${String.fromCharCode(Markers.CHAR)} (${Markers.CHAR})');
                 trace('Known marker: ${Markers.CHAR}');
+                return readChar();
             case Markers.STRING:
                 trace('Byte is ${String.fromCharCode(Markers.STRING)} (${Markers.STRING})');
                 return readString();
             default:
                 return null;
         }
+    }
 
-        return null;
+    function char(int) {
+        return String.fromCharCode(int);
     }
 
     function readContainerAndParameters(marker: Markers): Any {
         switch (marker) {
+            case 7:
+                var pos = position - 20;
+                for (i in pos...position + 20) {
+                    if (i == position) trace('--- pos ---');
+                    trace([${char(readByte(i))}]);
+                    if (i == position) trace('--- pos ---');
+                }
+                // trace(', [${char(readByte(pos + 1))}], [${char(readByte(pos))}]');
+                return read();
             // Containers
             case Markers.ARRAY_START:
                 trace('Byte is ${String.fromCharCode(Markers.ARRAY_START)} (${Markers.ARRAY_START})');
@@ -329,9 +384,11 @@ class SlpDecoder {
                 return readObject();
             // Optimized format optional parameters
             case Markers.TYPE:
+                trace(' ------- TYPE ------ ');
                 trace('Byte is ${String.fromCharCode(Markers.TYPE)} (${Markers.TYPE})');
                 trace('Known marker: ${Markers.TYPE}');
             case Markers.COUNT:
+                trace(' ------- COUNT ------ ');
                 trace('Byte is ${String.fromCharCode(Markers.COUNT)} (${Markers.COUNT})');
                 trace('Known marker: ${Markers.COUNT}');
                 // return readArray();
