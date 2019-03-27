@@ -188,9 +188,10 @@ class SlpDecoder {
         var length;
 
         // if its not number, throw error
-        if (Std.is(maybe_length, Int)) {
+        if (maybe_length != null && Std.is(maybe_length, Int)) {
             length = cast(maybe_length, Int); // Int32?
         } else {
+            if (position >= bytes.length) return null;
             var e = 'UBJSON decoder - failed to read string length';
             throw e;
         }
@@ -211,6 +212,7 @@ class SlpDecoder {
         while (!isEndObject()) {
             var field = readString();
             var value = read();
+            if (field == null) break; // eof
             object.set(field, value);
             trace('field, value');
             trace(field, value);
@@ -280,7 +282,7 @@ class SlpDecoder {
 
     function read(): Any {
         var marker = readByte();
-        trace('[${String.fromCharCode(marker)}]: $marker');
+        // trace('[${String.fromCharCode(marker)}]: $marker');
 
         next();
 
@@ -387,6 +389,10 @@ class SlpDecoder {
                 trace('Known marker: ${Markers.COUNT}');
                 // return readArray();
             default:
+                for (i in position-10...position+25) {
+                    if (i >= bytes.length) continue;
+                    trace(char(bytes.get(i)));
+                }
                 return marker;
         }
 
