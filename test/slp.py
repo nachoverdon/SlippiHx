@@ -1,6 +1,8 @@
 from slippi import Game
 
-game = Game('falco.slp')
-print(game.metadata)
-game = Game('fox.slp')
-print(game.metadata)
+game = None
+replays = ['falco', 'fox']
+
+for r in replays:
+	game = Game(f'{r}.slp')
+	print(r, game.metadata)

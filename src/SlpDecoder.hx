@@ -2,37 +2,33 @@ import haxe.io.BytesBuffer;
 import haxe.Int32;
 import haxe.Int64;
 import haxe.io.Bytes;
-import haxe.io.UInt8Array;
+import haxe.io.BytesData;
+// import haxe.io.UInt8Array;
+
+using byteConvert.ByteConvert;
 
 class SlpDecoder {
     var bytes: Bytes;
     var position: Int;
+    var data: Map<String, Any>;
     var metadata: Map<String, Any>;
     // var buffer: UInt8Array;
 
     public function new(bytes: Bytes) {
         this.bytes = bytes;
         position = 0;
+    }
 
-        // buffer = UInt8Array.fromBytes(bytes);
-
-        // var string = '';
-
-
-        // var file = sys.io.File.append('wtf.txt');
-        // for (i in 0...bytes.length) {
-
-        //     string = '${bytes.get(i)}: ${String.fromCharCode(bytes.get(i))}\n';
-        //     file.writeString(string);
-        // }
-
-        // file.close();
-
+    public function parse(): Void {
+        read();
     }
 
     public function getMetadata(): Map<String, Any> {
-        read();
         return metadata;
+    }
+
+    public function getData(): Map<String, Any> {
+        return data;
     }
 
     function next(?step: Int = 1) {
@@ -150,6 +146,7 @@ class SlpDecoder {
 
         // return buffer.getBytes().getInt32(0);
         var value = readBytes(5).getInt32(0);
+        // var test = bytes.getData();
         return value;
     }
 
@@ -196,30 +193,39 @@ class SlpDecoder {
             throw e;
         }
 
-
-
         var pos = position;
         next(length);
 
         var string = bytes.getString(pos, length);
-        trace('String "$string" with length $length');
+        // trace('String "$string" with length $length');
         return string;
     }
 
     function readObject(): Map<String, Any> {
         var object = new Map<String, Any>();
 
+        if (position == 1) {
+            data = object;
+        }
+
         while (!isEndObject()) {
             var field = readString();
             var value = read();
             if (field == null) break; // eof
             object.set(field, value);
-            trace('field, value');
-            trace(field, value);
+            // trace('field, value');
+            // trace(field, value);
 
-            // if (field == 'metadata') {
-            //     metadata = object;
-            // }
+            if (field == 'metadata') {
+                metadata = object;
+            }
+
+            if (value != null && Std.is(value, Map)) {
+                trace('value is map');
+                for (key in cast(value, Map<String, Dynamic>).keys()) {
+                    trace('Key: [$key]');
+                }
+            }
         }
 
         next();
@@ -230,10 +236,6 @@ class SlpDecoder {
     function readArray(): Array<Any> {
         var array = new Array<Any>();
 
-        // TODO: Can calculate how many bytes it takes by multiplying the length
-        // by the amount of bytes its type takes
-        // Like:  UInt8 = 1 byte, if 25 items, then 1 * 25items = X. add that to position
-        // + the bytes that tell you the length/type ($X#T)
         var type = readType();
         next();
         var length = readCount();
@@ -259,7 +261,7 @@ class SlpDecoder {
 
         next();
         var type = readByte();
-        trace('Type is ${String.fromCharCode(type)} ($type)');
+        // trace('Type is ${String.fromCharCode(type)} ($type)');
 
         return type;
     }
@@ -286,6 +288,11 @@ class SlpDecoder {
 
         next();
 
+        if (position >= bytes.length) {
+            // trace('End of file.');
+            return null;
+        }
+
         var value = readValue(marker);
         if (value != null) return value;
 
@@ -293,7 +300,7 @@ class SlpDecoder {
         if (other != null) return other;
 
         if (position >= bytes.length) {
-            trace('End of file.');
+            // trace('End of file.');
         } else {
             trace('[${String.fromCharCode(marker)}] ($marker) at ${position - 1}');
             var e = 'UBJSON decoder - value type with marker [${String.fromCharCode(marker)}] (${marker}) is ' +
@@ -305,55 +312,37 @@ class SlpDecoder {
     }
 
     function readValue(marker: Markers): Any {
+        // trace('Byte is ${char(marker)} ($marker)');
+
         switch (marker) {
+            // Types
             case Markers.NULL:
-                trace('Byte is ${String.fromCharCode(Markers.NULL)} (${Markers.NULL})');
                 return readNull();
             case Markers.NOOP:
-                trace('Byte is ${String.fromCharCode(Markers.NOOP)} (${Markers.NOOP})');
                 return readNoop();
             case Markers.TRUE:
-                trace('Byte is ${String.fromCharCode(Markers.TRUE)} (${Markers.TRUE})');
                 return readTrue();
             case Markers.FALSE:
-                trace('Byte is ${String.fromCharCode(Markers.FALSE)} (${Markers.FALSE})');
                 return readFalse();
             case Markers.INT8:
-                trace('Byte is ${String.fromCharCode(Markers.INT8)} (${Markers.INT8})');
-                trace('Known marker: ${Markers.INT8}');
                 return readInt8();
             case Markers.UINT8:
-                trace('Byte is ${String.fromCharCode(Markers.UINT8)} (${Markers.UINT8})');
                 return readUInt8();
             case Markers.INT16:
-                trace('Byte is ${String.fromCharCode(Markers.INT16)} (${Markers.INT16})');
-                trace('Known marker: ${Markers.INT16}');
                 return readInt16();
             case Markers.INT32:
-                trace('Byte is ${String.fromCharCode(Markers.INT32)} (${Markers.INT32})');
                 return readInt32();
             case Markers.INT64:
-                trace('Byte is ${String.fromCharCode(Markers.INT64)} (${Markers.INT64})');
-                trace('Known marker: ${Markers.INT64}');
                 return readInt64();
             case Markers.FLOAT32:
-                trace('Byte is ${String.fromCharCode(Markers.FLOAT32)} (${Markers.FLOAT32})');
-                trace('Known marker: ${Markers.FLOAT32}');
                 return readFloat32();
             case Markers.FLOAT64:
-                trace('Byte is ${String.fromCharCode(Markers.FLOAT64)} (${Markers.FLOAT64})');
-                trace('Known marker: ${Markers.FLOAT64}');
                 return readFloat64();
             case Markers.HIGH_PRECISION_NUMBER:
-                trace('Byte is ${String.fromCharCode(Markers.HIGH_PRECISION_NUMBER)} (${Markers.HIGH_PRECISION_NUMBER})');
-                trace('Known marker: ${Markers.HIGH_PRECISION_NUMBER}');
                 return readHighPrecisionNumber();
             case Markers.CHAR:
-                trace('Byte is ${String.fromCharCode(Markers.CHAR)} (${Markers.CHAR})');
-                trace('Known marker: ${Markers.CHAR}');
                 return readChar();
             case Markers.STRING:
-                trace('Byte is ${String.fromCharCode(Markers.STRING)} (${Markers.STRING})');
                 return readString();
             default:
                 return null;
@@ -361,10 +350,15 @@ class SlpDecoder {
     }
 
     function char(int) {
+        if (int == null) {
+            trace('Marker is null');
+            return null;
+        }
         return String.fromCharCode(int);
     }
 
     function readContainerAndParameters(marker: Markers): Any {
+        // trace('Byte is ${char(marker)} ($marker)');
         switch (marker) {
             // this 7 is actually the length of the string 'players'
             // It seems that we are skipping 1 bye and its not reading
@@ -373,36 +367,78 @@ class SlpDecoder {
             //     return 7;
             // Containers
             case Markers.ARRAY_START:
-                trace('Byte is ${String.fromCharCode(Markers.ARRAY_START)} (${Markers.ARRAY_START})');
                 return readArray();
             case Markers.OBJECT_START:
-                trace('Byte is ${String.fromCharCode(Markers.OBJECT_START)} (${Markers.OBJECT_START})');
                 return readObject();
             // Optimized format optional parameters
             case Markers.TYPE:
                 trace(' ------- TYPE ------ ');
-                trace('Byte is ${String.fromCharCode(Markers.TYPE)} (${Markers.TYPE})');
-                trace('Known marker: ${Markers.TYPE}');
             case Markers.COUNT:
                 trace(' ------- COUNT ------ ');
-                trace('Byte is ${String.fromCharCode(Markers.COUNT)} (${Markers.COUNT})');
-                trace('Known marker: ${Markers.COUNT}');
                 // return readArray();
             default:
-                for (i in position-10...position+25) {
-                    if (i >= bytes.length) continue;
-                    trace(char(bytes.get(i)));
-                }
+                // debug();
                 return marker;
         }
 
         return null;
     }
 
+    function debug(before: UInt, after: UInt) {
+        for (i in position-before...position+after) {
+            if (i >= bytes.length) break;
+            trace(char(bytes.get(i)));
+        }
+    }
+
+    static function binaryToDecimal(n: Int) {
+        var num = n;
+        var decimal = 0;
+
+        // Initializing base
+        // value to 1, i.e 2^0
+        var base = 1;
+
+        var temp = num;
+        while (temp > 0) {
+            var last_digit = temp % 10;
+            temp = Std.int(temp / 10);
+
+            decimal += last_digit * base;
+
+            base = base * 2;
+        }
+
+        return decimal;
+    }
+
+    static function toBinary(num: Int) {
+        var binaryNum = new Array<Int>();
+
+        var i = 0;
+        while (num > 0)
+        {
+            binaryNum[i] = Std.int(num % 2);
+            num = Std.int(num / 2);
+            i++;
+        }
+
+        binaryNum.reverse();
+        return binaryNum.join('');
+    }
+
+    static function flip(str: String) {
+        trace('str: $str');
+        var arr = str.split('');
+        arr.reverse();
+        trace(arr);
+        return arr.join('');
+    }
+
     public static function decode(bytes: Bytes): Map<String, Any> {
         var decoder = new SlpDecoder(bytes);
         decoder.read();
-        return decoder.metadata;
+        return decoder.data;
     }
 
 }

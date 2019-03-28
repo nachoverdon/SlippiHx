@@ -8,9 +8,13 @@ class Main {
 		file.bigEndian = true;
 		var bytes = file.readAll();
 		// var file = File.getBytes('test/fox.slp');
-		var metadata = new SlpDecoder(bytes).getMetadata();
-
+		var decoder = new SlpDecoder(bytes);
+		decoder.parse();
+		var slpData = cast(decoder.getData(), Map<String, Dynamic>);
+		var metadata = cast(decoder.getMetadata().get('metadata'), Map<String, Dynamic>);
+		trace(metadata);
 		trace(metadata.get('lastFrame'));
+		trace(slpData);
 
 		// for (key in metadata.keys()) {
 		// 	trace(key);
