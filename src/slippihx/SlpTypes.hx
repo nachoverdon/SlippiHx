@@ -16,7 +16,7 @@ typedef SlpMetadata = {
 typedef SlpPlayers = Map<Int, SlpPlayer>;
 
 typedef SlpPlayer = {
-    var names: Dynamic; // Should be string? wtf
+    var names: Map<String, Dynamic>; // Should be string? wtf
     var characters: Map<Int, Int>;
 }
 

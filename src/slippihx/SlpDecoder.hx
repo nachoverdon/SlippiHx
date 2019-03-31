@@ -1,16 +1,17 @@
 package slippihx;
 
 import haxe.io.Bytes;
-import haxe.Int32;
+// import haxe.Int32;
+import slippihx.SlpTypes;
 
 class SlpDecoder {
 	var bytes: Bytes;
     var position: Int;
     // public var data(default, null): Map<String, Dynamic>;
-    public var data(default, null): SlpTypes.SlpData;
+    public var data(default, null): SlpData;
 	public var raw(default, null): Array<UInt>;
 	// public var metadata(default, null): Map<String, Dynamic>;
-	public var metadata(default, null): SlpTypes.SlpMetadata;
+	public var metadata(default, null): SlpMetadata;
 
     public function new(bytes: Bytes, ?shouldParse: Bool = true) {
         this.bytes = bytes;
@@ -46,15 +47,47 @@ class SlpDecoder {
 	}
 
 	function _setMetadata(obj: Map<String, Dynamic>) {
+
 		var lastFrame = cast(obj.get('lastFrame'), Int);
+		var players: SlpPlayers = _setPlayers(obj.get('players'));
+
 		metadata = {
 			startAt: cast(obj.get('startAt'), String),
 			lastFrame: lastFrame,
-			// players: cast(obj.get('players'), SlpTypes.SlpPlayers),
-			players: obj.get('players'),
+			players: players,
 			playedOn: cast(obj.get('playedOn'), String),
 			duration: lastFrame + 124
 		}
+	}
+
+	function _setPlayers(obj: Map<String, Dynamic>): SlpPlayers {
+		var players: SlpPlayers = new SlpPlayers();
+
+		for (key in obj.keys()) {
+
+			var tempPlayer = cast(obj.get(key), Map<String, Dynamic>);
+			var player: SlpPlayer = _setPlayer(tempPlayer);
+			players.set(Std.parseInt(key), player);
+		}
+
+		return players;
+	}
+
+	function _setPlayer(obj: Map<String, Dynamic>): SlpPlayer {
+		var names: Map<String, Dynamic> = obj.get('names');
+		var tempChar: Map<String, Dynamic> = obj.get('characters');
+		var characters: Map<Int, Int> = new Map<Int, Int>();
+
+		for (charKey in tempChar.keys()) {
+			characters.set(Std.parseInt(charKey), tempChar.get(charKey));
+		}
+
+		var player: SlpPlayer = {
+			names: names,
+			characters: characters
+		}
+
+		return player;
 	}
 
 	// Reads a byte at the current or given position

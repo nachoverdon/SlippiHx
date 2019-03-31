@@ -1,8 +1,10 @@
 .vscode/
+src/slippihx/Main.hx
 build/
 test/
 export_classes.info
 compileHL.bat
+build.hxml
 cpp.hxml
 hl.hxml
 python.hxml
