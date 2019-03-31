@@ -16,7 +16,7 @@ typedef SlpMetadata = {
 typedef SlpPlayers = Map<Int, SlpPlayer>;
 
 typedef SlpPlayer = {
-    var names: Map<String, String>; // Should be string? wtf
+    @optional var names: Map<String, String>; // Should be string? wtf
     var characters: Map<Int, Int>;
 }
 

@@ -74,11 +74,14 @@ class SlpDecoder {
 	}
 
 	function _setPlayer(obj: Map<String, Dynamic>): SlpPlayer {
-		var tempNames = cast(obj.get('names'), Map<String, Dynamic>);
 		var names: Map<String, String> =  new Map<String, String>();
 
-		for (key in tempNames.keys()) {
-			names.set(key, cast(tempNames.get(key), String));
+		if (obj.exists('names')) {
+			var tempNames = cast(obj.get('names'), Map<String, Dynamic>);
+
+			for (key in tempNames.keys()) {
+				names.set(key, cast(tempNames.get(key), String));
+			}
 		}
 
 		var tempChar: Map<String, Dynamic> = obj.get('characters');
