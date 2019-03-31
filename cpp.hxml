@@ -1,5 +1,4 @@
--lib byteConvert
 -cpp build/cpp
--cp src
+-cp slippihx
 -D scriptable
 -main Main

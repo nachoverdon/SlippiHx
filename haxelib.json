@@ -1,0 +1,13 @@
+{
+  "name": "SlippiHx",
+  "url" : "https://github.com/nachoverdon/SlippiHx/",
+  "license": "MIT",
+  "tags": [
+      "project", "slippi", "super", "smash", "bros", "melee", "replay", "parser"
+    ],
+  "description": "A parser for Project Slippi replay files.",
+  "version": "1.0.0",
+  "classPath": "src/",
+  "releasenote": "Initial release.",
+  "contributors": ["nachoverdon"]
+}

@@ -1,4 +1,3 @@
--cp src
--lib byteConvert
+-cp slippihx
 -python build/python/slippihx.py
 -main Main

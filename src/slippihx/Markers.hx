@@ -1,3 +1,5 @@
+package slippihx;
+
 @:enum
 abstract Markers(Int) from Int to Int
 {

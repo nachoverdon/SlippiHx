@@ -1,3 +1,8 @@
 .vscode/
 build/
 export_classes.info
+compileHL.bat
+cpp.hxml
+hl.hxml
+python.hxml
+slippihx.zip

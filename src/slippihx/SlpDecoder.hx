@@ -1,11 +1,16 @@
-import haxe.io.Bytes;
+package slippihx;
 
-class SlippiDecoder {
+import haxe.io.Bytes;
+import haxe.Int32;
+
+class SlpDecoder {
 	var bytes: Bytes;
     var position: Int;
-    public var data(default, null): Map<String, Dynamic>;
+    // public var data(default, null): Map<String, Dynamic>;
+    public var data(default, null): SlpTypes.SlpData;
 	public var raw(default, null): Array<UInt>;
-	public var metadata(default, null): Map<String, Dynamic>;
+	// public var metadata(default, null): Map<String, Dynamic>;
+	public var metadata(default, null): SlpTypes.SlpMetadata;
 
     public function new(bytes: Bytes, ?shouldParse: Bool = true) {
         this.bytes = bytes;
@@ -16,8 +21,8 @@ class SlippiDecoder {
 		}
     }
 
-	static public function fromFile(path: String, ?parse: Bool): SlippiDecoder {
-		return new SlippiDecoder(
+	static public function fromFile(path: String, ?parse: Bool): SlpDecoder {
+		return new SlpDecoder(
 			sys.io.File.read(path, true).readAll(), parse
 		);
 	}
@@ -28,7 +33,28 @@ class SlippiDecoder {
 
 	public function parse() {
 		// parse data
-		data = readObject();
+		_setData(readObject());
+	}
+
+	function _setData(obj: Map<String, Dynamic>) {
+		_setMetadata(obj.get('metadata'));
+		data = {
+			raw: obj.get('raw'),
+			metadata: metadata
+		}
+		raw = data.raw;
+	}
+
+	function _setMetadata(obj: Map<String, Dynamic>) {
+		var lastFrame = cast(obj.get('lastFrame'), Int);
+		metadata = {
+			startAt: cast(obj.get('startAt'), String),
+			lastFrame: lastFrame,
+			// players: cast(obj.get('players'), SlpTypes.SlpPlayers),
+			players: obj.get('players'),
+			playedOn: cast(obj.get('playedOn'), String),
+			duration: lastFrame + 124
+		}
 	}
 
 	// Reads a byte at the current or given position
@@ -151,7 +177,7 @@ class SlippiDecoder {
 
 	function readArray(): Array<Dynamic> {
 		var array: Array<Dynamic>;
-		var type: Int = readType();
+		var type = readType();
 		var readFunction = readValue;
 
 		switch type {
@@ -197,7 +223,7 @@ class SlippiDecoder {
 
 		if (type != null) next();
 
-		var count: Int = readCount();
+		var count = readCount();
 
 		if (count == null) {
 
@@ -228,7 +254,7 @@ class SlippiDecoder {
 			object.set(field, value);
 
 			if (field == 'raw') raw = value;
-			if (field == 'metadata') metadata = cast(value, Map<String, Dynamic>);
+			if (field == 'metadata') cast(value, Map<String, Dynamic>);
 		}
 
 
@@ -243,20 +269,20 @@ class SlippiDecoder {
 		next();
 
 		switch marker {
-            case Markers.TRUE:
-				next();
-                return true;
-            case Markers.FALSE:
-				next();
-                return false;
+            // case Markers.TRUE:
+			// 	next();
+            //     return true;
+            // case Markers.FALSE:
+			// 	next();
+            //     return false;
             case Markers.UINT8:
                 return readUInt8();
-            case Markers.INT16:
-                return readInt16();
+            // case Markers.INT16:
+            //     return readInt16();
             case Markers.INT32:
                 return readInt32();
-            case Markers.FLOAT32:
-                return readFloat32();
+            // case Markers.FLOAT32:
+            //     return readFloat32();
             case Markers.STRING:
                 return readString();
 			case Markers.ARRAY_START:
