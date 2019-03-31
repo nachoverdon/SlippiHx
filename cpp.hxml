@@ -1,4 +1,5 @@
--cpp build
+-lib byteConvert
+-cpp build/cpp
 -cp src
 -D scriptable
 -main Main
