@@ -22,11 +22,13 @@ class SlpDecoder {
 		}
     }
 
+	#if sys
 	static public function fromFile(path: String, ?parse: Bool): SlpDecoder {
 		return new SlpDecoder(
-			sys.io.File.read(path, true).readAll(), parse
+			sys.io.File.read(haxe.io.Path.normalize(path), true).readAll(), parse
 		);
 	}
+	#end
 
 	static function showMarker(marker: Int): String {
 		return '>${String.fromCharCode(marker)}< ($marker)';
