@@ -4,6 +4,8 @@ import haxe.io.Bytes;
 // import haxe.Int32;
 import slippihx.SlpTypes;
 
+@:expose
+@:keep
 class SlpDecoder {
 	var bytes: Bytes;
     var position: Int;
@@ -51,6 +53,9 @@ class SlpDecoder {
 	function _setMetadata(obj: Map<String, Dynamic>) {
 
 		var lastFrame = cast(obj.get('lastFrame'), Int);
+		var consoleNick = obj.exists('consoleNick')
+			? cast(obj.get('consoleNick'), String)
+			: null;
 		var players: SlpPlayers = _setPlayers(obj.get('players'));
 
 		metadata = {
@@ -58,7 +63,8 @@ class SlpDecoder {
 			lastFrame: lastFrame,
 			players: players,
 			playedOn: cast(obj.get('playedOn'), String),
-			duration: lastFrame + 124
+			duration: lastFrame + 124,
+			consoleNick: consoleNick
 		}
 	}
 

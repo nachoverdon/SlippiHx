@@ -1,5 +1,7 @@
 package slippihx;
 
+@:expose
+@:keep
 typedef SlpData = {
     var raw: Array<UInt>;
     var metadata: SlpMetadata;
@@ -11,6 +13,7 @@ typedef SlpMetadata = {
     var players: SlpPlayers;
     var playedOn: String;
     var duration: Int;
+    var consoleNick: Null<String>;
 }
 
 typedef SlpPlayers = Map<Int, SlpPlayer>;
