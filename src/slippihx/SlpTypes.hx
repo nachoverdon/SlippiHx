@@ -7,6 +7,8 @@ typedef SlpData = {
     var metadata: SlpMetadata;
 }
 
+@:expose
+@:keep
 typedef SlpMetadata = {
     var startAt: String;
     var lastFrame: Int;
@@ -16,11 +18,69 @@ typedef SlpMetadata = {
     var consoleNick: Null<String>;
 }
 
+@:expose
+@:keep
 typedef SlpPlayers = Map<Int, SlpPlayer>;
 
+@:expose
+@:keep
 typedef SlpPlayer = {
     @optional var names: Map<String, String>; // Should be string? wtf
     var characters: Map<Int, Int>;
+}
+
+@:expose
+@:keep
+typedef SlpRaw = {
+    var eventPayloads: SlpEventsPayloads;
+    var frames: Array<SlpFrames>;
+    var gameStart: SlpGameStart;
+    var gameEnd: SlpGameEnd;
+}
+
+@:expose
+@:keep
+typedef SlpEventsPayloads = {
+    var eventPayloads: UInt;
+    var gameStart: Int;
+    var preFrameUpdate: Int;
+    var postFrameUpdate: Int;
+    var gameEnd: Int;
+}
+
+@:expose
+@:keep
+typedef SlpFrames = {
+    var preFrameUpdate: SlpPreFrameUpdate;
+    var postFrameUpdate: SlpPostFrameUpdate;
+}
+
+@:expose
+@:keep
+typedef SlpGameStart = {
+    var version: Array<UInt>; // Size 4
+    var gameInfoBlock: Array<UInt>; // Size 312
+    var isTeams: Bool;
+    var stage: Int;
+    // var externalCharacterId
+}
+
+@:expose
+@:keep
+typedef SlpPreFrameUpdate = {
+    //
+}
+
+@:expose
+@:keep
+typedef SlpPostFrameUpdate = {
+    //
+}
+
+@:expose
+@:keep
+typedef SlpGameEnd = {
+    //
 }
 
 // typedef SlpCharacterFrames = {

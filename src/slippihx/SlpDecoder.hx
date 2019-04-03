@@ -25,7 +25,7 @@ class SlpDecoder {
     }
 
 	#if sys
-	static public function fromFile(path: String, ?parse: Bool): SlpDecoder {
+	public static function fromFile(path: String, ?parse: Bool): SlpDecoder {
 		return new SlpDecoder(
 			sys.io.File.read(haxe.io.Path.normalize(path), true).readAll(), parse
 		);
