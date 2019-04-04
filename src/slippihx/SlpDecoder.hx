@@ -153,6 +153,8 @@ class SlpDecoder {
 		return number;
 	}
 
+	// TODO: Fix this, it doesn't work. Possibily even remove it, since it's not
+	// used atm, unless a new metadata field of type Int16 is added.
 	function readInt16(): Int {
 		return readBytes(2).getInt32(0);
 	}

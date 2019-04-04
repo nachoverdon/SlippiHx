@@ -58,11 +58,20 @@ typedef SlpFrames = {
 @:expose
 @:keep
 typedef SlpGameStart = {
-    var version: Array<UInt>; // Size 4
+    var version: SlpVersion;
     var gameInfoBlock: Array<UInt>; // Size 312
     var isTeams: Bool;
     var stage: Int;
     // var externalCharacterId
+    // var playerTypes
+    // var stockStartCounts
+    // var characterColors
+    // var teamIds
+    var randomSeed: Int;
+    // var dashbackFixes: Null<>
+    // var shieldDropFixes: Null<>
+    // var nametags // Null<>
+    var pal: Bool;
 }
 
 @:expose
@@ -81,6 +90,15 @@ typedef SlpPostFrameUpdate = {
 @:keep
 typedef SlpGameEnd = {
     //
+}
+
+@:expose
+@:keep
+typedef SlpVersion = {
+    var major: UInt;
+    var minor: UInt;
+    var build: UInt;
+    var revision: UInt;
 }
 
 // typedef SlpCharacterFrames = {
