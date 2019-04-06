@@ -1,6 +1,7 @@
 package slippihx;
 
 import haxe.io.Bytes;
+import haxe.ds.Vector;
 // import haxe.Int32;
 import slippihx.SlpTypes;
 
@@ -11,7 +12,7 @@ class SlpDecoder {
     var position: Int;
     // public var data(default, null): Map<String, Dynamic>;
     public var data(default, null): SlpData;
-	public var raw(default, null): Array<UInt>;
+	public var raw(default, null): Vector<UInt>;
 	// public var metadata(default, null): Map<String, Dynamic>;
 	public var metadata(default, null): SlpMetadata;
 
@@ -227,72 +228,79 @@ class SlpDecoder {
 		return readInt();
 	}
 
-	function readArray(): Array<Dynamic> {
-		var array: Array<Dynamic>;
+	// TODO: Raw is guaranteed to be a Vector and have a type and a size if the
+	// replay file is 'complete' and not being read in real-time.
+	// Metadata might incorporate some array in the future.
+	// Do some kind of readList function that first determines whether the
+	// list has a predefined size (Vector) or not (Array) and go from there.
+	// readList() -> readVector || readArray
+	function readArray(): Vector<Dynamic> {
+		var vector: Vector<Dynamic>;
 		var type = readType();
 		var readFunction = readValue;
-
-		switch type {
-			case Markers.TRUE:
-				array = new Array<Bool>();
-				readFunction = function() {return true;};
-
-			case Markers.FALSE:
-				array = new Array<Bool>();
-				readFunction = function() {return false;};
-
-			case Markers.UINT8:
-				array = new Array<UInt>();
-				readFunction = readUInt8;
-
-			case Markers.INT16:
-				array = new Array<Int>();
-				readFunction = readInt16;
-
-			case Markers.INT32:
-				array = new Array<Int>();
-				readFunction = readInt32;
-
-			case Markers.FLOAT32:
-				array = new Array<Float>();
-				readFunction = readFloat32;
-
-			case Markers.STRING:
-				array = new Array<String>();
-				readFunction = readString;
-
-			case Markers.OBJECT_START:
-				array = new Array<Map<String, Dynamic>>();
-				readFunction = readObject;
-
-			case Markers.ARRAY_START:
-				array = new Array<Array<Dynamic>>();
-				readFunction = readArray;
-
-			default:
-				array = new Array<Dynamic>();
-		}
 
 		if (type != null) next();
 
 		var count = readCount();
 
 		if (count == null) {
-
-			while (!isArrayEnd()) {
-				var value: Dynamic = readValue();
-				array.push(value);
-			}
+			vector = new Vector<Dynamic>(0);
+			// I'm leaving this commented for the time being.
+			// while (!isArrayEnd()) {
+			// 	var value: Dynamic = readValue();
+			// 	array.push(value);
+			// }
 
 		} else {
 
+			switch type {
+				case Markers.TRUE:
+					vector = new Vector<Bool>(count);
+					readFunction = function() {return true;};
+
+				case Markers.FALSE:
+					vector = new Vector<Bool>(count);
+					readFunction = function() {return false;};
+
+				case Markers.UINT8:
+					vector = new Vector<UInt>(count);
+					readFunction = readUInt8;
+
+				case Markers.INT16:
+					vector = new Vector<Int>(count);
+					readFunction = readInt16;
+
+				case Markers.INT32:
+					vector = new Vector<Int>(count);
+					readFunction = readInt32;
+
+				case Markers.FLOAT32:
+					vector = new Vector<Float>(count);
+					readFunction = readFloat32;
+
+				case Markers.STRING:
+					vector = new Vector<String>(count);
+					readFunction = readString;
+
+				case Markers.OBJECT_START:
+					vector = new Vector<Map<String, Dynamic>>(count);
+					readFunction = readObject;
+
+				case Markers.ARRAY_START:
+					vector = new Vector<Vector<Dynamic>>(count);
+					readFunction = readArray;
+
+				default:
+					vector = new Vector<Dynamic>(count);
+			}
+
 			for (i in 0...count) {
 				var value: Dynamic = readFunction();
-				array.push(value);
+				vector[i] = value;
 			}
 		}
 
-		return array;
+		return vector;
 	}
 
 	function readObject(): Map<String, Dynamic> {

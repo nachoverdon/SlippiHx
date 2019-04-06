@@ -1,9 +1,11 @@
 package slippihx;
 
+import haxe.ds.Vector;
+
 @:expose
 @:keep
 typedef SlpData = {
-    var raw: Array<UInt>;
+    var raw: Vector<UInt>;
     var metadata: SlpMetadata;
 }
 
@@ -59,19 +61,39 @@ typedef SlpFrames = {
 @:keep
 typedef SlpGameStart = {
     var version: SlpVersion;
-    var gameInfoBlock: Array<UInt>; // Size 312
+    var gameInfoBlock: Vector<UInt>; // Size 312
     var isTeams: Bool;
-    var stage: Int;
-    // var externalCharacterId
-    // var playerTypes
-    // var stockStartCounts
-    // var characterColors
-    // var teamIds
-    var randomSeed: Int;
-    // var dashbackFixes: Null<>
-    // var shieldDropFixes: Null<>
-    // var nametags // Null<>
-    var pal: Bool;
+    var stage: UInt;
+    var externalCharacterId: SlpPlayersInfo;
+    var playerTypes: SlpPlayersInfo;
+    var stockStartCounts: SlpPlayersInfo;
+    var characterColors: SlpPlayersInfo;
+    var teamIds: SlpPlayersInfo;
+    var randomSeed: UInt;
+    var dashbackFixes: Null<SlpPlayersInfo>;
+    var shieldDropFixes: Null<SlpPlayersInfo>;
+    var nametags: Null<SlpNametags>;
+    // Since these are just bools, if not compat set to false instead of null?
+    var pal: Null<Bool>;
+    var frozenPS: Null<Bool>;
+}
+
+@:expose
+@:keep
+typedef SlpPlayersInfo = {
+    var p1: Int;
+    var p2: Int;
+    var p3: Int;
+    var p4: Int;
+}
+
+@:expose
+@:keep
+typedef SlpNametags = {
+    var p1: String;
+    var p2: String;
+    var p3: String;
+    var p4: String;
 }
 
 @:expose

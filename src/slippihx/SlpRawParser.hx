@@ -1,7 +1,7 @@
 package slippihx;
 
-import haxe.io.Bytes;
 import haxe.Json;
+import haxe.ds.Vector;
 import slippihx.SlpTypes;
 
 @:expose
@@ -26,7 +26,9 @@ abstract Versions(String) from String to String
     var v1_0_0_0 = '1.0.0.0';
     var v1_2_0_0 = '1.2.0.0';
     var v1_3_0_0 = '1.3.0.0';
+    var v1_4_0_0 = '1.4.0.0';
     var v1_5_0_0 = '1.5.0.0';
+    var v2_0_0_0 = '2.0.0.0';
 }
 
 @:expose
@@ -35,10 +37,10 @@ class SlpRawParser {
 
     /**
      * Returns the JSON's stringified parsed data.
-     * @param raw An array of UInt, containing game data.
+     * @param raw A vector of UInt, containing game data.
      * @return String JSON with the data
      */
-    public static function toJson(raw: Array<UInt>): String {
+    public static function toJson(raw: Vector<UInt>): String {
         function isCompatible(version: SlpVersion, requires: Versions): Bool {
             function toSlpVersion(ver: Versions): SlpVersion {
                 var arr = '$ver'.split('.');
@@ -55,7 +57,6 @@ class SlpRawParser {
             var ra = [r.major, r.minor, r.build, r.revision];
 
             for (i in 0...4) {
-                trace('i $i');
                 var nv = va[i];
                 var nr = ra[i];
                 if (nv > nr) return true;
@@ -65,38 +66,41 @@ class SlpRawParser {
             return true;
         }
 
-        function toBytes(from: Int, to: Int): Bytes {
-            var bytes = Bytes.alloc(to - from);
-
-            for (i in from...to) bytes.set(i - from, raw[i]);
-
-            return bytes;
+        function readUInt32(pos: Int): UInt {
+            return raw[pos] << 24 | raw[pos + 1] << 16 | raw[pos + 2] << 8 | raw[pos + 3];
         }
 
-        function reverse(bytes: Bytes) {
-            var b = Bytes.alloc(bytes.length);
+        function readInt16(pos: Int): UInt {
+            var n: UInt = 0;
+            n = raw[pos] << 8 | raw[pos + 1];
+            return n;
 
-            for (i in 0...b.length) b.set(b.length - 1 - i, bytes.get(i));
-
-            return b;
+            return raw[pos] << 8 | raw[pos + 1];
         }
 
         function readEventPayloads(): SlpEventsPayloads {
             if (raw[0] != EVENT_PAYLOADS)
                 throw '${StringTools.hex(raw[0])} is not EVENT_PAYLOADS';
 
-            var b = toBytes(0, raw[1] + 1);
-
             return {
                 eventPayloads: raw[1],
-                gameStart: b.getUInt16(3),
-                preFrameUpdate: b.getUInt16(6),
-                postFrameUpdate: b.getUInt16(9),
-                gameEnd: b.getUInt16(12)
+                gameStart: readInt16(3),
+                preFrameUpdate: readInt16(6),
+                postFrameUpdate: readInt16(9),
+                gameEnd: readInt16(12)
             };
         }
 
         function readGameStarts(pos: Int): Dynamic { // :SlpGameStart
+            inline function getInfoPlayersAt(start: Int, offsetPerPlayer: Int) {
+                return {
+                    p1: raw[start],
+                    p2: raw[start + offsetPerPlayer],
+                    p3: raw[start + (offsetPerPlayer * 2)],
+                    p4: raw[start + (offsetPerPlayer * 3)]
+                };
+            }
+
             if (raw[pos] != GAME_START)
                 throw '${StringTools.hex(raw[pos])} is not GAME_START';
 
@@ -108,37 +112,59 @@ class SlpRawParser {
             };
 
             // End is 5 + 312
-            var gameInfoBlock = raw.slice(pos + 0x5, pos + 0x5 + 312);
-            var b = reverse(toBytes(pos + 0x13, pos + 0x15));
-            var stage = b.getUInt16(0);
-            // var stage = haxe.io.UInt16Array.fromBytes(b, 0).get(0);
-            b = toBytes(pos + 0x13D, pos + 0x13D + 4);
-            var randomSeed = b.getInt32(0); // Has to be UInt32
+            var gameInfoBlock = new Vector<UInt>(312);
+            Vector.blit(raw, pos + 0x5, gameInfoBlock, 0, 312);
+            var isTeams = raw[pos + 0xD] == 1;
+            var stage = readInt16(pos + 0x13);
+            // TODO: Make sure it is UInt32 and not just Int32
+            var randomSeed: UInt = readUInt32(pos + 0x13D);
+            // TODO: p3 and p4 seem to be erroneous.
+            var externalCharacterIds =  getInfoPlayersAt(pos + 0x65, 0x24);
+            var playerTypes =  getInfoPlayersAt(pos + 0x66, 0x24);
+            var stockStartCounts =  getInfoPlayersAt(pos + 0x67, 0x24);
+            var characterColors =  getInfoPlayersAt(pos + 0x68, 0x24);
+            var teamIds =  getInfoPlayersAt(pos + 0x6E, 0x24);
+
+            // 1.0.0.0
+            // These are supposed to be UInt32, but the only possible values are
+            // 0, 1 and 2 for None, UCF, Dween respectively, so this is faster.
+            var dashbackFixes = isCompatible(version, v1_0_0_0) ? getInfoPlayersAt(pos + 0x144, 0x8) : null;
+            var shieldDropFixes = isCompatible(version, v1_0_0_0) ? getInfoPlayersAt(pos + 0x145, 0x8) : null;
+            // 1.3.0.0
+            // TODO: Implements this.
+            var nametags = isCompatible(version, v1_3_0_0) ? 'getNameTags()' : null;
+            // 1.5.0.0
+            var pal = isCompatible(version, v1_5_0_0) ? raw[pos + 0x1A1] == 1 : null;
+            var frozenPS = isCompatible(version, v2_0_0_0) ? raw[pos + 0x1A2] == 1 : null;
 
             return {
                 version: version,
                 gameInfoBlock: gameInfoBlock,
-                isTeams: raw[pos + 0xD] == 1 ? true : false,
+                isTeams: isTeams,
                 stage: stage,
-                // externalCharacterId: ,
-                // playerTypes: ,
-                // stockStartCounts: ,
-                // characterColors: ,
-                // teamIds: ,
+                externalCharacterIds: externalCharacterIds,
+                playerTypes: playerTypes,
+                stockStartCounts: stockStartCounts,
+                characterColors: characterColors,
+                teamIds: teamIds,
                 randomSeed: randomSeed,
-                // dashbackFixes: ,
-                // nametags: ,
-                // pal:
+                dashbackFixes: dashbackFixes,
+                shieldDropFixes: shieldDropFixes,
+                nametags: nametags,
+                pal: pal,
+                frozenPS: frozenPS
             };
         }
 
         var eventPayloads = readEventPayloads();
+        // TODO: Delete this
         for (i in eventPayloads.eventPayloads-5...eventPayloads.eventPayloads+0x1A1+1) {
             trace('[${raw[i]}] @${i - 14} ${StringTools.hex(i - 14)}');
         }
         var gameStarts = readGameStarts(eventPayloads.eventPayloads + 1);
         var position = eventPayloads.eventPayloads - 1; // 0x36 GAME_STARTS
 
+        // TODO: Implement all, type.
         var json = { // :SlpRaw
             eventPayloads:  eventPayloads,
             gameStart: gameStarts,
@@ -150,7 +176,7 @@ class SlpRawParser {
         }
 
 
-        return Json.stringify(json);
+        return Json.stringify(json, null, '\t');
     }
 
 }
