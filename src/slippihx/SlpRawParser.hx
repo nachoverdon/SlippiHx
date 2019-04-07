@@ -70,11 +70,7 @@ class SlpRawParser {
             return raw[pos] << 24 | raw[pos + 1] << 16 | raw[pos + 2] << 8 | raw[pos + 3];
         }
 
-        function readInt16(pos: Int): UInt {
-            var n: UInt = 0;
-            n = raw[pos] << 8 | raw[pos + 1];
-            return n;
-
+        function readInt16(pos: Int): Int {
             return raw[pos] << 8 | raw[pos + 1];
         }
 
@@ -91,7 +87,7 @@ class SlpRawParser {
             };
         }
 
-        function readGameStarts(pos: Int): Dynamic { // :SlpGameStart
+        function readGameStarts(pos: Int): SlpGameStart {
             inline function getInfoPlayersAt(start: Int, offsetPerPlayer: Int) {
                 return {
                     p1: raw[start],
@@ -116,8 +112,7 @@ class SlpRawParser {
             Vector.blit(raw, pos + 0x5, gameInfoBlock, 0, 312);
             var isTeams = raw[pos + 0xD] == 1;
             var stage = readInt16(pos + 0x13);
-            // TODO: Make sure it is UInt32 and not just Int32
-            var randomSeed: UInt = readUInt32(pos + 0x13D);
+            var randomSeed = readUInt32(pos + 0x13D);
             // TODO: p3 and p4 seem to be erroneous.
             var externalCharacterIds =  getInfoPlayersAt(pos + 0x65, 0x24);
             var playerTypes =  getInfoPlayersAt(pos + 0x66, 0x24);
@@ -132,7 +127,7 @@ class SlpRawParser {
             var shieldDropFixes = isCompatible(version, v1_0_0_0) ? getInfoPlayersAt(pos + 0x145, 0x8) : null;
             // 1.3.0.0
             // TODO: Implements this.
-            var nametags = isCompatible(version, v1_3_0_0) ? 'getNameTags()' : null;
+            var nametags = isCompatible(version, v1_3_0_0) ? null : null;
             // 1.5.0.0
             var pal = isCompatible(version, v1_5_0_0) ? raw[pos + 0x1A1] == 1 : null;
             var frozenPS = isCompatible(version, v2_0_0_0) ? raw[pos + 0x1A2] == 1 : null;
@@ -175,7 +170,7 @@ class SlpRawParser {
             gameEnd: {}
         }
 
-
+        // TODO: JSON encodes UInts as Ints (32Bits, 16 still work as intended).
         return Json.stringify(json, null, '\t');
     }
 

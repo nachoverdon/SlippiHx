@@ -64,7 +64,7 @@ typedef SlpGameStart = {
     var gameInfoBlock: Vector<UInt>; // Size 312
     var isTeams: Bool;
     var stage: UInt;
-    var externalCharacterId: SlpPlayersInfo;
+    var externalCharacterIds: SlpPlayersInfo;
     var playerTypes: SlpPlayersInfo;
     var stockStartCounts: SlpPlayersInfo;
     var characterColors: SlpPlayersInfo;
