@@ -87,7 +87,7 @@ class SlpRawParser {
             };
         }
 
-        function readGameStarts(pos: Int): SlpGameStart {
+        function readGameStart(pos: Int): SlpGameStart {
             inline function getInfoPlayersAt(start: Int, offsetPerPlayer: Int) {
                 return {
                     p1: raw[start],
@@ -156,22 +156,25 @@ class SlpRawParser {
         for (i in eventPayloads.eventPayloads-5...eventPayloads.eventPayloads+0x1A1+1) {
             trace('[${raw[i]}] @${i - 14} ${StringTools.hex(i - 14)}');
         }
-        var gameStarts = readGameStarts(eventPayloads.eventPayloads + 1);
+        var gameStart = readGameStart(eventPayloads.eventPayloads + 1);
         var position = eventPayloads.eventPayloads - 1; // 0x36 GAME_STARTS
 
         // TODO: Implement all, type.
         var json = { // :SlpRaw
             eventPayloads:  eventPayloads,
-            gameStart: gameStarts,
+            gameStart: gameStart,
             frames: [{
                 preFrameUpdate: {},
                 postFrameUpdate: {},
             }],
             gameEnd: {}
         }
-
         // TODO: JSON encodes UInts as Ints (32Bits, 16 still work as intended).
-        return Json.stringify(json, null, '\t');
+        // tink_json seems to work correctly out of the box. use that instead?
+        // Still not working on python? https://github.com/haxetink/tink_json/issues/58
+        // trace(tink.Json.stringify({test: gameStart.randomSeed}));
+        return tink.Json.stringify(json);
+        // return Json.stringify(json, null, '\t');
     }
 
 }

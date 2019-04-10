@@ -1,7 +1,11 @@
 # SlippiHx
 
+`haxelib git tink_json https://github.com/haxetink/tink_json`
+
 ```haxe
-import SlpDecoder;
+import slippihx.SlpDecoder;
+import slippihx.SlpTypes;
+
 
 class Main {
     var slp = SlpDecoder.fromFile('replay.slp');
@@ -20,7 +24,7 @@ For JavaScript, you can use [hxnodejs](https://lib.haxe.org/p/hxnodejs/) to read
 
 ```haxe
 // Must include '-lib hxnodejs'
-import SlpDecoder;
+import slippihx.SlpDecoder;
 
 class Main {
     var bytes = sys.io.File.read('replay.slp', true).readAll();
