@@ -1,7 +1,6 @@
 package slippihx;
 
 import haxe.Json;
-import haxe.ds.Vector;
 import slippihx.SlpTypes;
 
 @:expose
@@ -37,10 +36,10 @@ class SlpRawParser {
 
     /**
      * Returns the JSON's stringified parsed data.
-     * @param raw A vector of UInt, containing game data.
+     * @param raw An Array of UInt, containing game data.
      * @return String JSON with the data
      */
-    public static function toJson(raw: Vector<UInt>): String {
+    public static function toJson(raw: Array<UInt>): String {
         function isCompatible(version: SlpVersion, requires: Versions): Bool {
             function toSlpVersion(ver: Versions): SlpVersion {
                 var arr = '$ver'.split('.');
@@ -108,8 +107,11 @@ class SlpRawParser {
             };
 
             // End is 5 + 312
-            var gameInfoBlock = new Vector<UInt>(312);
-            Vector.blit(raw, pos + 0x5, gameInfoBlock, 0, 312);
+            var gameInfoBlock = new Array<UInt>();
+            for (i in 0...312) {
+                gameInfoBlock[i] = raw[pos + 0x5 + i];
+            }
+            // Vector.blit(raw, pos + 0x5, gameInfoBlock, 0, 312);
             var isTeams = raw[pos + 0xD] == 1;
             var stage = readInt16(pos + 0x13);
             var randomSeed = readUInt32(pos + 0x13D);

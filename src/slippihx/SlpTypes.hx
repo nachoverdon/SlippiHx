@@ -1,11 +1,9 @@
 package slippihx;
 
-import haxe.ds.Vector;
-
 @:expose
 @:keep
 typedef SlpData = {
-    var raw: Vector<UInt>;
+    var raw: Array<UInt>;
     var metadata: SlpMetadata;
 }
 
@@ -27,7 +25,7 @@ typedef SlpPlayers = Map<Int, SlpPlayer>;
 @:expose
 @:keep
 typedef SlpPlayer = {
-    @optional var names: Map<String, String>; // Should be string? wtf
+    @:optional var names: Map<String, String>; // Should be string? wtf
     var characters: Map<Int, Int>;
 }
 
@@ -61,7 +59,7 @@ typedef SlpFrames = {
 @:keep
 typedef SlpGameStart = {
     var version: SlpVersion;
-    var gameInfoBlock: Vector<UInt>; // Size 312
+    var gameInfoBlock: Array<UInt>; // Size 312
     var isTeams: Bool;
     var stage: UInt;
     var externalCharacterIds: SlpPlayersInfo;
